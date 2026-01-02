@@ -235,8 +235,8 @@ export function getSeasonInfo(details: TMDBTVShowDetails): string {
 		.filter(s => s.season_number >= 0) // 스페셜 에피소드 제외 (season_number = 0)
 		.map(s => {
 			const posterUrl = s.poster_path ? `https://image.tmdb.org/t/p/w200${s.poster_path}` : '';
-			const posterLink = posterUrl ? ` - ![${s.name} Poster](${posterUrl})` : '';
-			let seasonText = `${s.name}: ${s.episode_count}화${posterLink}`;
+			const posterLink = posterUrl ? `![${s.name} Poster](${posterUrl})` : '';
+			let seasonText = `- ${s.name}: ${s.episode_count}화\n${posterLink}`;
 			if (s.overview) {
 				seasonText += `\n\n${s.overview}`;
 			}
