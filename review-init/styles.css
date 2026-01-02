@@ -1,0 +1,24 @@
+.tmdb-result-list {
+	max-height: 60vh;
+	overflow-y: auto;
+}
+
+.tmdb-result-item {
+	cursor: pointer;
+	padding: 10px;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.tmdb-result-item:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.tmdb-result-title {
+	font-weight: bold;
+}
+
+.tmdb-overview {
+	font-size: 0.9em;
+	color: var(--text-muted);
+	margin-top: 5px;
+}
