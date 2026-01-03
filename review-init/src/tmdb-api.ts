@@ -60,9 +60,11 @@ export interface TMDBTVShowDetails {
 	episode_run_time: number[];
 	poster_path: string | null;
 	production_companies: { id: number; name: string }[];
+	in_production: boolean;
 	created_by: { id: number; name: string }[];
 	number_of_seasons: number;
 	seasons: Array<{
+		id: number;
 		season_number: number;
 		episode_count: number;
 		name: string;
@@ -180,6 +182,7 @@ export function createMovieFrontmatter(
 	const productionCompanies = details.production_companies.map((c) => c.name);
 
 	return {
+		id: details.id,
 		제목: details.title,
 		원제목: details.original_title,
 		"Poster URL": details.poster_path
@@ -197,7 +200,6 @@ export function createMovieFrontmatter(
 		"시청 타입": [],
 		"시청 매체": [],
 		평점: "",
-		완료: false,
 	};
 }
 
@@ -215,47 +217,77 @@ export function createTVShowFrontmatter(
 
 	const productionCompanies = details.production_companies.map((c) => c.name);
 	return {
+		id: details.id,
 		제목: details.name,
 		원제목: details.original_name,
 		"Poster URL": details.poster_path
 			? `https://image.tmdb.org/t/p/w500${details.poster_path}`
 			: "",
-		구분: ["드라마"],
+		구분: ["TV", "드라마", "예능"],
 		장르: details.genres.map((g) => g.name),
 		감독: creators, // TV의 경우 제작자를 감독 필드에
 		주연: mainCast,
 		"음악 감독": musicComposers,
 		제작사: productionCompanies,
 		개봉일: details.first_air_date,
-		시즌: details.number_of_seasons,
-		"현재시즌": "",
-		"현재에피소드": "",
+		"전체 시즌": details.number_of_seasons,
 		시청일: null,
 		"시청 매체": [],
 		평점: "",
-		완료: false,
+		완결: !details.in_production,
 	};
 }
 
-export function getSeasonInfo(details: TMDBTVShowDetails): string {
-	const seasonInfo = details.seasons
-		.filter((s) => s.season_number >= 0) // 스페셜 에피소드 제외 (season_number = 0)
-		.map((s) => {
-			const posterUrl = s.poster_path
-				? `https://image.tmdb.org/t/p/w200${s.poster_path}`
-				: "";
-			const posterLink = posterUrl
-				? `![${s.name} Poster](${posterUrl})`
-				: "";
+export function createSeasonFrontmatter(
+	tvDetails: TMDBTVShowDetails,
+	season: {
+		id: number;
+		season_number: number;
+		episode_count: number;
+		name: string;
+		poster_path: string | null;
+		overview: string;
+		air_date: string;
+	},
+): Record<string, string | string[] | number | boolean | null> {
+	const creators = tvDetails.created_by.map((c) => c.name);
 
-			const title = s.name;
-			const episodeCount = `에피소드 수: ${s.episode_count}`;
-			const airDate = s.air_date ? `첫 방영일: ${s.air_date}` : "";
-			const overview = s.overview ?? "";
+	const musicComposers =
+		tvDetails.credits?.crew
+			.filter((c) => c.job === "Original Music Composer")
+			.map((c) => c.name) || [];
 
-			return `### ${title}\n${posterLink}\n\n${episodeCount}${airDate ? `\n${airDate}` : ""}${overview ? `\n\n${overview}` : ""}`;
-		})
-		.join("\n\n");
+	const mainCast =
+		tvDetails.credits?.cast.slice(0, 5).map((c) => c.name) || [];
 
-	return seasonInfo ? `## 시즌 정보\n\n${seasonInfo}` : "";
+	const productionCompanies = tvDetails.production_companies.map(
+		(c) => c.name,
+	);
+
+	// in_production이 true이고 마지막 시즌인 경우만 방영중 true
+	const isOngoing =
+		tvDetails.in_production &&
+		season.season_number === tvDetails.number_of_seasons;
+
+	return {
+		id: season.id,
+		제목: `${tvDetails.name} ${season.name}`,
+		원제목: tvDetails.original_name,
+		"Poster URL": season.poster_path
+			? `https://image.tmdb.org/t/p/w500${season.poster_path}`
+			: "",
+		구분: ["TV", "드라마", "예능"],
+		장르: tvDetails.genres.map((g) => g.name),
+		감독: creators,
+		주연: mainCast,
+		"음악 감독": musicComposers,
+		제작사: productionCompanies,
+		개봉일: season.air_date,
+		시즌번호: season.season_number,
+		에피소드수: season.episode_count,
+		시청일: null,
+		"시청 매체": [],
+		평점: "",
+		완결: !isOngoing,
+	};
 }

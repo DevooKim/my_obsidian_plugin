@@ -35,3 +35,36 @@
 	gap: 8px;
 	margin-top: 10px;
 }
+
+.tmdb-season-desc {
+	margin-bottom: 15px;
+}
+
+.tmdb-season-list {
+	max-height: 400px;
+	overflow-y: auto;
+	margin: 15px 0;
+}
+
+.tmdb-season-item {
+	padding: 8px;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.tmdb-season-item input[type="checkbox"] {
+	cursor: pointer;
+}
+
+.tmdb-season-item label {
+	cursor: pointer;
+	flex: 1;
+}
+
+.tmdb-season-item:first-child {
+	border-bottom: 1px solid var(--background-modifier-border);
+	margin-bottom: 10px;
+	padding-bottom: 10px;
+	font-weight: bold;
+}
