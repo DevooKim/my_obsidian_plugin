@@ -4,7 +4,7 @@
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
 	"description": "Fetch movie and TV show data from TMDB and add to Obsidian frontmatter",
-	"author": "Your Name",
-	"authorUrl": "",
+	"author": "DevooKim",
+	"authorUrl": "https://github.com/DevooKim/my_obsidian_plugin",
 	"isDesktopOnly": false
 }
