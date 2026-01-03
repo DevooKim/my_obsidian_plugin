@@ -115,13 +115,13 @@ export default class TMDBPlugin extends Plugin {
 			return;
 		}
 
-		// 첫 번째 결과 사용
-		const firstResult = searchResults.results[0];
-		if (!firstResult) {
-			new Notice("검색 결과가 없습니다.");
-			return;
-		}
-		await this.fetchDetails(type, firstResult.id);
+		new TMDBSearchModal(
+			this.app,
+			searchResults.results as Array<TMDBMovie | TMDBTVShow>,
+			(selected) => {
+				void this.fetchDetails(type, selected.id);
+			},
+		).open();
 	}
 
 	async fetchByTitle(title: string) {
@@ -197,7 +197,9 @@ export default class TMDBPlugin extends Plugin {
 
 		for (const season of validSeasons) {
 			if (selectedSeasons.includes(season.season_number)) {
-				const seasonFileName = `${showName} ${season.name}`;
+				const seasonFileName = this.sanitizeName(
+					`${showName} ${season.name}`,
+				);
 				seasonLinks.push(`- [[${seasonFileName}]]`);
 
 				// 시즌별 파일 생성
@@ -218,7 +220,7 @@ export default class TMDBPlugin extends Plugin {
 			}
 		}
 
-		const seriesName = `${showName} - 전체`;
+		const seriesName = this.sanitizeName(`${showName} - 메인`);
 
 		// 메인 TV 쇼 파일 생성 (시즌 링크 포함)
 		const seasonLinksText =
@@ -252,11 +254,14 @@ export default class TMDBPlugin extends Plugin {
 			return;
 		}
 
+		const safeShowName = this.sanitizeName(showName);
+		const safeFileName = this.sanitizeName(fileName);
+
 		// 파일 경로 생성: {folderPath}/{mediaType}/{showName}/{fileName}.md
 		const basePath = this.settings.folderPath || "";
 		const typeFolder = basePath ? `${basePath}/${mediaType}` : mediaType;
-		const folderPath = `${typeFolder}/${showName}`;
-		const filePath = `${folderPath}/${fileName}.md`;
+		const folderPath = `${typeFolder}/${safeShowName}`;
+		const filePath = `${folderPath}/${safeFileName}.md`;
 
 		// 폴더가 없으면 생성
 		const folder = this.app.vault.getAbstractFileByPath(folderPath);
@@ -293,10 +298,14 @@ export default class TMDBPlugin extends Plugin {
 		const file = await this.app.vault.create(filePath, newContent);
 
 		// 메인 파일인 경우에만 열기 (isMainFile)
-		if (isMainFile) {
-			const leaf = this.app.workspace.getLeaf("tab");
-			await leaf.openFile(file);
-		}
+		// if (isMainFile) {
+		// 	const leaf = this.app.workspace.getLeaf("tab");
+		// 	await leaf.openFile(file);
+		// }
+	}
+
+	sanitizeName(name: string): string {
+		return name.replace(/:/g, " - ");
 	}
 
 	generateFrontmatterString(

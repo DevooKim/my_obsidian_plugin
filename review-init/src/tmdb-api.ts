@@ -223,7 +223,7 @@ export function createTVShowFrontmatter(
 		"Poster URL": details.poster_path
 			? `https://image.tmdb.org/t/p/w500${details.poster_path}`
 			: "",
-		구분: ["TV", "드라마", "예능"],
+		구분: [],
 		장르: details.genres.map((g) => g.name),
 		감독: creators, // TV의 경우 제작자를 감독 필드에
 		주연: mainCast,
@@ -276,7 +276,7 @@ export function createSeasonFrontmatter(
 		"Poster URL": season.poster_path
 			? `https://image.tmdb.org/t/p/w500${season.poster_path}`
 			: "",
-		구분: ["TV", "드라마", "예능"],
+		구분: [],
 		장르: tvDetails.genres.map((g) => g.name),
 		감독: creators,
 		주연: mainCast,
