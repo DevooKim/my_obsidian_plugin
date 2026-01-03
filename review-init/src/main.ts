@@ -151,10 +151,10 @@ export default class TMDBPlugin extends Plugin {
 		// 선택된 텍스트 제거
 		editor.replaceSelection('');
 
-		new Notice('TMDB 데이터가 추가되었습니다!');
+		new Notice("TMDB 데이터가 추가되었습니다!");
 	}
 
-	async addFrontmatter(view: MarkdownView, data: Record<string, string | string[] | number | boolean>, title?: string, seasonInfo?: string, overview?: string) {
+	async addFrontmatter(view: MarkdownView, data: Record<string, string | string[] | number | boolean | null>, title?: string, seasonInfo?: string, overview?: string) {
 		const file = view.file;
 		if (!file) return;
 
@@ -193,7 +193,7 @@ export default class TMDBPlugin extends Plugin {
 		}
 	}
 
-	generateFrontmatterString(data: Record<string, string | string[] | number | boolean>): string {
+	generateFrontmatterString(data: Record<string, string | string[] | number | boolean | null>): string {
 		let result = '---\n';
 		for (const [key, value] of Object.entries(data)) {
 			if (Array.isArray(value)) {
