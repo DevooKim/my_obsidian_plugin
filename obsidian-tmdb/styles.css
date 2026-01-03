@@ -1,32 +1,100 @@
+
+.tmdb-modal {
+	width: 900px;
+	max-width: 92vw;
+}
+
+.tmdb-modal-title {
+	margin-bottom: 8px;
+	color: var(--interactive-accent);
+	letter-spacing: 0.02em;
+}
+
 .tmdb-result-list {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
 	max-height: 60vh;
 	overflow-y: auto;
+	padding: 6px 2px 2px;
 }
 
 .tmdb-result-item {
 	cursor: pointer;
-	padding: 10px;
-	border-bottom: 1px solid var(--background-modifier-border);
+	display: grid;
+	grid-template-columns: 140px 1fr;
+	align-items: center;
+	gap: 16px;
+	padding: 14px 16px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 14px;
+	background: linear-gradient(145deg, var(--background-secondary), var(--background-primary));
+	box-shadow: 0 12px 22px rgba(0, 0, 0, 0.12);
+	transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
 }
 
 .tmdb-result-item:hover {
-	background-color: var(--background-modifier-hover);
+	transform: translateY(-2px);
+	border-color: var(--interactive-accent);
+	box-shadow: 0 16px 26px rgba(0, 0, 0, 0.16);
+}
+
+.tmdb-poster,
+.tmdb-no-poster {
+	width: 140px;
+	height: 200px;
+	border-radius: 12px;
+	object-fit: cover;
+	background: linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.08));
+	box-shadow: 0 8px 16px rgba(0, 0, 0, 0.18);
+}
+
+.tmdb-no-poster {
+	display: grid;
+	place-items: center;
+	color: var(--text-muted);
+	font-weight: 600;
+	text-transform: uppercase;
+}
+
+.tmdb-result-body {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	flex: 1;
 }
 
 .tmdb-result-title {
-	font-weight: bold;
+	font-weight: 700;
+	font-size: 1rem;
+	line-height: 1.4;
+	color: var(--text-normal);
+}
+
+.tmdb-release-date {
+	font-size: 0.9rem;
+	color: var(--text-muted);
 }
 
 .tmdb-overview {
-	font-size: 0.9em;
+	font-size: 0.92rem;
 	color: var(--text-muted);
-	margin-top: 5px;
+	line-height: 1.45;
+	margin-top: 4px;
+	display: -webkit-box;
+	line-clamp: 2;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
 }
 
 .tmdb-search-input {
 	width: 100%;
-	padding: 8px;
+	padding: 10px 12px;
 	margin-bottom: 10px;
+	border-radius: 10px;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
 }
 
 .tmdb-button-container {

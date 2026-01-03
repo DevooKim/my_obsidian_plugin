@@ -373,9 +373,10 @@ class TMDBSearchModal extends Modal {
 
 	onOpen() {
 		const { contentEl } = this;
+		this.modalEl.addClass("tmdb-modal");
 		contentEl.empty();
 
-		contentEl.createEl("h2", { text: "검색 결과" });
+		contentEl.createEl("h2", { text: "검색 결과", cls: "tmdb-modal-title" });
 
 		const resultList = contentEl.createDiv({ cls: "tmdb-result-list" });
 
@@ -388,21 +389,38 @@ class TMDBSearchModal extends Modal {
 				? result.release_date
 				: result.first_air_date;
 			const mediaType = isMovie ? "영화" : "TV";
+			const posterUrl = result.poster_path
+				? `https://image.tmdb.org/t/p/w200${result.poster_path}`
+				: null;
 
-			item.createEl("div", {
+			if (posterUrl) {
+				item.createEl("img", {
+					attr: { src: posterUrl, alt: `${title} 포스터` },
+					cls: "tmdb-poster",
+				});
+			} else {
+				item.createDiv({
+					text: "이미지 없음",
+					cls: "tmdb-poster tmdb-no-poster",
+				});
+			}
+
+			const body = item.createDiv({ cls: "tmdb-result-body" });
+
+			body.createEl("div", {
 				text: `${title} (${mediaType})`,
 				cls: "tmdb-result-title",
 			});
 
 			if (releaseDate) {
-				item.createEl("div", {
+				body.createEl("div", {
 					text: `개봉일: ${releaseDate}`,
 					cls: "tmdb-release-date",
 				});
 			}
 
 			if (result.overview) {
-				const overview = item.createEl("div", {
+				const overview = body.createEl("div", {
 					text: result.overview,
 					cls: "tmdb-overview",
 				});
