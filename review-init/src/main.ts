@@ -1,4 +1,4 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin } from 'obsidian';
+import { App, Modal, Notice, Plugin } from 'obsidian';
 import { DEFAULT_SETTINGS, TMDBPluginSettings, TMDBSettingTab } from "./settings";
 import { TMDBApi, TMDBMovie, TMDBTVShow, createMovieFrontmatter, createTVShowFrontmatter, getSeasonInfo } from "./tmdb-api";
 
@@ -18,8 +18,8 @@ export default class TMDBPlugin extends Plugin {
 		this.addCommand({
 			id: 'fetch-tmdb-data',
 			name: 'Fetch TMDB Data',
-			editorCallback: async (editor: Editor, view: MarkdownView) => {
-				await this.fetchTMDBData(editor, view);
+			callback: async () => {
+				await this.showSearchModal();
 			}
 		});
 
@@ -27,7 +27,7 @@ export default class TMDBPlugin extends Plugin {
 		this.addSettingTab(new TMDBSettingTab(this.app, this));
 	}
 
-	async fetchTMDBData(editor: Editor, view: MarkdownView) {
+	async showSearchModal() {
 		// API 키 확인
 		if (!this.settings.apiKey) {
 			new Notice('TMDB API 키를 먼저 설정해주세요.');
@@ -38,27 +38,35 @@ export default class TMDBPlugin extends Plugin {
 			this.tmdbApi = new TMDBApi(this.settings.apiKey);
 		}
 
-		// 선택된 텍스트 가져오기
-		const selectedText = editor.getSelection().trim();
+		// 검색어 입력 모달 표시
+		new TMDBSearchInputModal(this.app, (searchText: string) => {
+			void this.searchTMDB(searchText);
+		}).open();
+	}
+
+	async searchTMDB(searchText: string) {
+		if (!this.tmdbApi) return;
+
+		const selectedText = searchText.trim();
 		if (!selectedText) {
-			new Notice('텍스트를 선택해주세요.');
+			new Notice('검색어를 입력해주세요.');
 			return;
 		}
 
 		try {
 			// URL인지 확인
 			if (selectedText.startsWith('http')) {
-				await this.fetchByUrl(selectedText, view, editor);
+				await this.fetchByUrl(selectedText);
 			} else {
 				// 타입_제목 형식인지 확인
 				const typeMatch = selectedText.match(/^(영화|티비|tv)_(.+)$/i);
 				if (typeMatch && typeMatch[1] && typeMatch[2]) {
 					const type = typeMatch[1].toLowerCase() === '영화' ? 'movie' : 'tv';
 					const title = typeMatch[2];
-					await this.fetchByTypeAndTitle(type, title, view, editor);
+					await this.fetchByTypeAndTitle(type, title);
 				} else {
 					// 일반 제목으로 검색 (모달로 선택)
-					await this.fetchByTitle(selectedText, view, editor);
+					await this.fetchByTitle(selectedText);
 				}
 			}
 		} catch (error) {
@@ -68,7 +76,7 @@ export default class TMDBPlugin extends Plugin {
 		}
 	}
 
-	async fetchByUrl(url: string, view: MarkdownView, editor: Editor) {
+	async fetchByUrl(url: string) {
 		if (!this.tmdbApi) return;
 
 		const result = this.tmdbApi.extractIdFromUrl(url);
@@ -77,10 +85,10 @@ export default class TMDBPlugin extends Plugin {
 			return;
 		}
 
-		await this.fetchDetails(result.type, result.id, view, editor);
+		await this.fetchDetails(result.type, result.id);
 	}
 
-	async fetchByTypeAndTitle(type: 'movie' | 'tv', title: string, view: MarkdownView, editor: Editor) {
+	async fetchByTypeAndTitle(type: 'movie' | 'tv', title: string) {
 		if (!this.tmdbApi) return;
 
 		const searchResults = type === 'movie'
@@ -98,10 +106,10 @@ export default class TMDBPlugin extends Plugin {
 			new Notice('검색 결과가 없습니다.');
 			return;
 		}
-		await this.fetchDetails(type, firstResult.id, view, editor);
+		await this.fetchDetails(type, firstResult.id);
 	}
 
-	async fetchByTitle(title: string, view: MarkdownView, editor: Editor) {
+	async fetchByTitle(title: string) {
 		if (!this.tmdbApi) return;
 
 		// 영화와 TV 프로그램 모두 검색
@@ -123,11 +131,11 @@ export default class TMDBPlugin extends Plugin {
 		// 결과 선택 모달 표시
 		new TMDBSearchModal(this.app, allResults, (selected) => {
 			const type = selected.media_type === 'movie' ? 'movie' : 'tv';
-			void this.fetchDetails(type, selected.id, view, editor);
+			void this.fetchDetails(type, selected.id);
 		}).open();
 	}
 
-	async fetchDetails(type: 'movie' | 'tv', id: number, view: MarkdownView, editor: Editor) {
+	async fetchDetails(type: 'movie' | 'tv', id: number) {
 		if (!this.tmdbApi) return;
 
 		let title = '';
@@ -138,41 +146,39 @@ export default class TMDBPlugin extends Plugin {
 			const frontmatter = createMovieFrontmatter(details);
 			title = details.title;
 			overview = details.overview;
-			await this.addFrontmatter(view, frontmatter, title, '', overview);
+			await this.createNewFile(frontmatter, title, '', overview);
 		} else {
 			const details = await this.tmdbApi.getTVShowDetails(id);
 			const frontmatter = createTVShowFrontmatter(details);
 			title = details.name;
 			seasonInfo = getSeasonInfo(details);
 			overview = details.overview;
-			await this.addFrontmatter(view, frontmatter, title, seasonInfo, overview);
+			await this.createNewFile(frontmatter, title, seasonInfo, overview);
 		}
-
-		// 선택된 텍스트 제거
-		editor.replaceSelection('');
 
 		new Notice("TMDB 데이터가 추가되었습니다!");
 	}
 
-	async addFrontmatter(view: MarkdownView, data: Record<string, string | string[] | number | boolean | null>, title?: string, seasonInfo?: string, overview?: string) {
-		const file = view.file;
-		if (!file) return;
-
-		const content = await this.app.vault.read(file);
-		const newFrontmatter = this.generateFrontmatterString(data);
-
-		// 기존 frontmatter가 있는지 확인
-		const frontmatterRegex = /^---\n([\s\S]*?)\n---\n/;
-		const match = content.match(frontmatterRegex);
-
-		let newContent: string;
-		if (match) {
-			// 기존 frontmatter 업데이트
-			newContent = content.replace(frontmatterRegex, newFrontmatter);
-		} else {
-			// 새 frontmatter 추가
-			newContent = newFrontmatter + content;
+	async createNewFile(data: Record<string, string | string[] | number | boolean | null>, title?: string, seasonInfo?: string, overview?: string) {
+		if (!title) {
+			new Notice('제목을 찾을 수 없습니다.');
+			return;
 		}
+
+		// 파일 경로 생성: {folderPath}/{title}/{title}.md
+		const basePath = (this.settings.folderPath || '') as string;
+		const folderPath = basePath ? `${basePath}/${title}` : title;
+		const filePath = `${folderPath}/${title}.md`;
+
+		// 폴더가 없으면 생성
+		const folder = this.app.vault.getAbstractFileByPath(folderPath);
+		if (!folder) {
+			await this.app.vault.createFolder(folderPath);
+		}
+
+		// 파일 내용 생성
+		const newFrontmatter = this.generateFrontmatterString(data);
+		let newContent = newFrontmatter;
 
 		// overview가 있으면 본문에 추가
 		if (overview) {
@@ -184,12 +190,13 @@ export default class TMDBPlugin extends Plugin {
 			newContent = newContent + '\n' + seasonInfo;
 		}
 
-		await this.app.vault.modify(file, newContent);
+		// 파일 생성
+		const file = await this.app.vault.create(filePath, newContent);
 
-		// 파일명을 제목으로 변경
-		if (title && file.basename !== title) {
-			const newPath = file.parent ? `${file.parent.path}/${title}.md` : `${title}.md`;
-			await this.app.fileManager.renameFile(file, newPath);
+		// 새로 생성한 파일 열기
+		const leaf = this.app.workspace.getLeaf(false);
+		if (leaf) {
+			await leaf.openFile(file);
 		}
 	}
 
@@ -278,6 +285,62 @@ class TMDBSearchModal extends Modal {
 				this.close();
 			});
 		});
+	}
+
+	onClose() {
+		const { contentEl } = this;
+		contentEl.empty();
+	}
+}
+
+class TMDBSearchInputModal extends Modal {
+	onSubmit: (searchText: string) => void;
+
+	constructor(app: App, onSubmit: (searchText: string) => void) {
+		super(app);
+		this.onSubmit = onSubmit;
+	}
+
+	onOpen() {
+		const { contentEl } = this;
+		contentEl.empty();
+
+		contentEl.createEl('h2', { text: 'TMDB 검색' });
+
+		const inputContainer = contentEl.createDiv();
+		const input = inputContainer.createEl('input', {
+			type: 'text',
+			placeholder: '영화/TV 제목 또는 URL을 입력하세요...',
+			cls: 'tmdb-search-input'
+		});
+
+		const buttonContainer = contentEl.createDiv({ cls: 'tmdb-button-container' });
+
+		const searchButton = buttonContainer.createEl('button', { text: '검색', cls: 'mod-cta' });
+		
+		const cancelButton = buttonContainer.createEl('button', { text: '취소' });
+
+		const handleSearch = () => {
+			const value = input.value.trim();
+			if (value) {
+				this.close();
+				this.onSubmit(value);
+			} else {
+				new Notice('검색어를 입력해주세요.');
+			}
+		};
+
+		searchButton.addEventListener('click', handleSearch);
+		cancelButton.addEventListener('click', () => this.close());
+
+		input.addEventListener('keydown', (e: KeyboardEvent) => {
+			if (e.key === 'Enter') {
+				handleSearch();
+			}
+		});
+
+		// 포커스 설정
+		setTimeout(() => input.focus(), 10);
 	}
 
 	onClose() {

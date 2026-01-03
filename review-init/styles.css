@@ -22,3 +22,16 @@
 	color: var(--text-muted);
 	margin-top: 5px;
 }
+
+.tmdb-search-input {
+	width: 100%;
+	padding: 8px;
+	margin-bottom: 10px;
+}
+
+.tmdb-button-container {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 10px;
+}
