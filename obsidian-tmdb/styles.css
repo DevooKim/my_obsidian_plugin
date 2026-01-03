@@ -64,11 +64,24 @@
 	flex: 1;
 }
 
+.tmdb-result-title-row {
+	display: flex;
+	gap: 6px;
+	align-items: baseline;
+	flex-wrap: wrap;
+}
+
 .tmdb-result-title {
 	font-weight: 700;
 	font-size: 1rem;
 	line-height: 1.4;
 	color: var(--text-normal);
+}
+
+.tmdb-original-title {
+	color: var(--text-faint);
+	font-weight: 600;
+	font-size: 0.95rem;
 }
 
 .tmdb-release-date {

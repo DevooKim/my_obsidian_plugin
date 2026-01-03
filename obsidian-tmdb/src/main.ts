@@ -385,6 +385,12 @@ class TMDBSearchModal extends Modal {
 
 			const isMovie = "title" in result;
 			const title = isMovie ? result.title : result.name;
+			const originalTitle =
+				isMovie && "original_title" in result
+					? result.original_title
+					: !isMovie && "original_name" in result
+						? result.original_name
+						: undefined;
 			const releaseDate = isMovie
 				? result.release_date
 				: result.first_air_date;
@@ -407,10 +413,22 @@ class TMDBSearchModal extends Modal {
 
 			const body = item.createDiv({ cls: "tmdb-result-body" });
 
-			body.createEl("div", {
+			const titleRow = body.createDiv({ cls: "tmdb-result-title-row" });
+			titleRow.createEl("div", {
 				text: `${title} (${mediaType})`,
 				cls: "tmdb-result-title",
 			});
+
+			if (
+				originalTitle &&
+				originalTitle.trim() !== "" &&
+				originalTitle !== title
+			) {
+				titleRow.createEl("span", {
+					text: `(${originalTitle})`,
+					cls: "tmdb-original-title",
+				});
+			}
 
 			if (releaseDate) {
 				body.createEl("div", {
